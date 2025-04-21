@@ -21,6 +21,13 @@ export default {
 
 		const pathname = url.pathname.slice(1);
 
+		if (!pathname) {
+			return new Response(
+				'Bad Request',
+				{ status: 400 }
+			);
+		}
+
 		const redirectURL = await env.SHORT_URLS.get(pathname);
 
 		if (!redirectURL) {
