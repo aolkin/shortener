@@ -1,6 +1,6 @@
 {
-	"name": "yellow-limit-4e78",
-	"version": "0.0.0",
+	"name": "shortener",
+	"version": "0.0.1",
 	"private": true,
 	"scripts": {
 		"deploy": "wrangler deploy",
