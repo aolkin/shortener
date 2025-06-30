@@ -74,6 +74,7 @@ export default {
 					}
 				);
 			}
+		}
 		
 		return Response.redirect(redirectURL.startsWith('http') ? redirectURL : `https://${redirectURL}`, 302);
 	},
