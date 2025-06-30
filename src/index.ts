@@ -32,7 +32,7 @@ function parseDataURL(dataURL: string) {
 
   return {
     mediaType: mediaType,
-    data: isBase64 ? atob(data) : decodeURIComponent(data),
+    data: isBase64 ? Uint8Array.from(atob(data), c => c.charCodeAt(0)) : decodeURIComponent(data),
   };
 }
 
