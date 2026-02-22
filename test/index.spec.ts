@@ -72,7 +72,7 @@ afterEach(() => {
 });
 
 describe('bare domain (no path)', () => {
-	it('returns Hello HTML when no secrets are configured', async () => {
+	it('returns Niente page when no secrets are configured', async () => {
 		const request = new IncomingRequest('http://example.com/');
 		const ctx = createExecutionContext();
 		const response = await worker.fetch(request, env, ctx);
@@ -81,10 +81,28 @@ describe('bare domain (no path)', () => {
 		expect(response.status).toBe(200);
 		expect(response.headers.get('Content-Type')).toBe('text/html;charset=UTF-8');
 		const body = await response.text();
-		expect(body).toContain('<h1>Hello</h1>');
+		expect(body).toContain('Niente');
+		expect(body).not.toContain('<form');
 	});
 
-	it('returns Hello HTML when JWT is valid', async () => {
+	it('returns Niente page on POST when no secrets are configured', async () => {
+		const body = new URLSearchParams({ slug: 'x', url: 'https://example.org' });
+		const request = new IncomingRequest('http://example.com/', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+			body: body.toString(),
+		});
+		const ctx = createExecutionContext();
+		const response = await worker.fetch(request, env, ctx);
+		await waitOnExecutionContext(ctx);
+
+		expect(response.status).toBe(200);
+		const html = await response.text();
+		expect(html).toContain('Niente');
+		expect(html).not.toContain('<form');
+	});
+
+	it('returns form page when JWT is valid', async () => {
 		const token = await createJWT(validPayload(), testPrivateKey, TEST_KID);
 		mockJWKS();
 
@@ -98,7 +116,73 @@ describe('bare domain (no path)', () => {
 
 		expect(response.status).toBe(200);
 		const body = await response.text();
-		expect(body).toContain('<h1>Hello</h1>');
+		expect(body).toContain('<form method="POST">');
+		expect(body).toContain('Create Short URL');
+	});
+
+	it('creates short URL on POST with valid JWT', async () => {
+		const token = await createJWT(validPayload(), testPrivateKey, TEST_KID);
+		mockJWKS();
+
+		const body = new URLSearchParams({ slug: 'test-slug', url: 'https://example.org' });
+		const request = new IncomingRequest('http://example.com/', {
+			method: 'POST',
+			headers: {
+				'Cf-Access-Jwt-Assertion': token,
+				'Content-Type': 'application/x-www-form-urlencoded',
+			},
+			body: body.toString(),
+		});
+		const ctx = createExecutionContext();
+		const testEnv = { ...env, CF_ACCESS_AUD: TEST_AUD, CF_ACCESS_JWKS_URL: TEST_JWKS_URL };
+		const response = await worker.fetch(request, testEnv, ctx);
+		await waitOnExecutionContext(ctx);
+
+		expect(response.status).toBe(200);
+		const html = await response.text();
+		expect(html).toContain('Created');
+		expect(html).toContain('test-slug');
+
+		const stored = await env.SHORT_URLS.get('test-slug');
+		expect(stored).toBe('https://example.org');
+	});
+
+	it('returns 403 on POST without JWT when secrets configured', async () => {
+		const body = new URLSearchParams({ slug: 'x', url: 'https://example.org' });
+		const request = new IncomingRequest('http://example.com/', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+			body: body.toString(),
+		});
+		const ctx = createExecutionContext();
+		const testEnv = { ...env, CF_ACCESS_AUD: TEST_AUD, CF_ACCESS_JWKS_URL: TEST_JWKS_URL };
+		const response = await worker.fetch(request, testEnv, ctx);
+		await waitOnExecutionContext(ctx);
+
+		expect(response.status).toBe(403);
+	});
+
+	it('returns 400 on POST with missing form fields', async () => {
+		const token = await createJWT(validPayload(), testPrivateKey, TEST_KID);
+		mockJWKS();
+
+		const body = new URLSearchParams({ slug: 'test-slug' });
+		const request = new IncomingRequest('http://example.com/', {
+			method: 'POST',
+			headers: {
+				'Cf-Access-Jwt-Assertion': token,
+				'Content-Type': 'application/x-www-form-urlencoded',
+			},
+			body: body.toString(),
+		});
+		const ctx = createExecutionContext();
+		const testEnv = { ...env, CF_ACCESS_AUD: TEST_AUD, CF_ACCESS_JWKS_URL: TEST_JWKS_URL };
+		const response = await worker.fetch(request, testEnv, ctx);
+		await waitOnExecutionContext(ctx);
+
+		expect(response.status).toBe(400);
+		const html = await response.text();
+		expect(html).toContain('Error');
 	});
 
 	it('returns 403 when no JWT header is present and secrets are configured', async () => {

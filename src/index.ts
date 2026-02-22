@@ -1,4 +1,4 @@
-import { validateAccessJWT } from './jwt';
+import { handleHomePage } from './home';
 
 function parseDataURL(dataURL: string) {
   const parts = dataURL.split(',');
@@ -36,21 +36,7 @@ export default {
 		const pathname = url.pathname.slice(1);
 
 		if (!pathname) {
-			if (env.CF_ACCESS_AUD && env.CF_ACCESS_JWKS_URL) {
-				const token = request.headers.get('Cf-Access-Jwt-Assertion');
-				if (!token) {
-					return new Response('Forbidden', { status: 403 });
-				}
-				try {
-					await validateAccessJWT(token, env.CF_ACCESS_JWKS_URL, env.CF_ACCESS_AUD);
-				} catch {
-					return new Response('Forbidden', { status: 403 });
-				}
-			}
-			return new Response(
-				'<!DOCTYPE html>\n<html>\n<head><title>Hello</title></head>\n<body><h1>Hello</h1></body>\n</html>',
-				{ status: 200, headers: { 'Content-Type': 'text/html;charset=UTF-8' } },
-			);
+			return handleHomePage(request, env);
 		}
 
 		const redirectURL = await env.SHORT_URLS.get(pathname);
