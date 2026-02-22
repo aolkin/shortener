@@ -4,6 +4,8 @@
 declare namespace Cloudflare {
 	interface Env {
 		SHORT_URLS: KVNamespace;
+		CF_ACCESS_AUD?: string;
+		CF_ACCESS_JWKS_URL?: string;
 	}
 }
 interface Env extends Cloudflare.Env {}

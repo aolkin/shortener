@@ -1,15 +1,4 @@
-/**
- * Welcome to Cloudflare Workers! This is your first worker.
- *
- * - Run `npm run dev` in your terminal to start a development server
- * - Open a browser tab at http://localhost:8787/ to see your worker in action
- * - Run `npm run deploy` to publish your worker
- *
- * Bind resources to your worker in `wrangler.jsonc`. After adding bindings, a type definition for the
- * `Env` object can be regenerated with `npm run cf-typegen`.
- *
- * Learn more at https://developers.cloudflare.com/workers/
- */
+import { validateAccessJWT } from './jwt';
 
 function parseDataURL(dataURL: string) {
   const parts = dataURL.split(',');
@@ -47,9 +36,20 @@ export default {
 		const pathname = url.pathname.slice(1);
 
 		if (!pathname) {
+			if (env.CF_ACCESS_AUD && env.CF_ACCESS_JWKS_URL) {
+				const token = request.headers.get('Cf-Access-Jwt-Assertion');
+				if (!token) {
+					return new Response('Forbidden', { status: 403 });
+				}
+				try {
+					await validateAccessJWT(token, env.CF_ACCESS_JWKS_URL, env.CF_ACCESS_AUD);
+				} catch {
+					return new Response('Forbidden', { status: 403 });
+				}
+			}
 			return new Response(
-				'Bad Request',
-				{ status: 400 }
+				'<!DOCTYPE html>\n<html>\n<head><title>Hello</title></head>\n<body><h1>Hello</h1></body>\n</html>',
+				{ status: 200, headers: { 'Content-Type': 'text/html;charset=UTF-8' } },
 			);
 		}
 
