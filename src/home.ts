@@ -4,9 +4,17 @@ function escapeHtml(s: string): string {
 	return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
+const STYLE = `<style>
+body { font-family: system-ui, sans-serif; max-width: 480px; margin: 2rem auto; padding: 0 1rem; }
+label { display: block; margin: 0.5rem 0; }
+input { padding: 0.3rem; width: 100%; box-sizing: border-box; }
+button { margin-top: 0.75rem; padding: 0.4rem 1rem; }
+p { padding: 0.5rem; background: #eef; border-radius: 4px; }
+</style>`;
+
 function htmlResponse(body: string, status = 200): Response {
 	return new Response(
-		`<!DOCTYPE html>\n<html>\n<head><title>Shortener</title></head>\n<body>${body}</body>\n</html>`,
+		`<!DOCTYPE html>\n<html>\n<head><title>Shortener</title>${STYLE}</head>\n<body>${body}</body>\n</html>`,
 		{ status, headers: { 'Content-Type': 'text/html;charset=UTF-8' } },
 	);
 }
@@ -24,7 +32,7 @@ function formPage(message?: string, status = 200): Response {
 
 export async function handleHomePage(request: Request, env: Env): Promise<Response> {
 	if (!env.CF_ACCESS_AUD || !env.CF_ACCESS_JWKS_URL) {
-		return htmlResponse('');
+		return htmlResponse('Niente');
 	}
 
 	const token = request.headers.get('Cf-Access-Jwt-Assertion');

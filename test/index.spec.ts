@@ -72,7 +72,7 @@ afterEach(() => {
 });
 
 describe('bare domain (no path)', () => {
-	it('returns empty page when no secrets are configured', async () => {
+	it('returns Niente page when no secrets are configured', async () => {
 		const request = new IncomingRequest('http://example.com/');
 		const ctx = createExecutionContext();
 		const response = await worker.fetch(request, env, ctx);
@@ -81,10 +81,11 @@ describe('bare domain (no path)', () => {
 		expect(response.status).toBe(200);
 		expect(response.headers.get('Content-Type')).toBe('text/html;charset=UTF-8');
 		const body = await response.text();
+		expect(body).toContain('Niente');
 		expect(body).not.toContain('<form');
 	});
 
-	it('returns empty page on POST when no secrets are configured', async () => {
+	it('returns Niente page on POST when no secrets are configured', async () => {
 		const body = new URLSearchParams({ slug: 'x', url: 'https://example.org' });
 		const request = new IncomingRequest('http://example.com/', {
 			method: 'POST',
@@ -97,6 +98,7 @@ describe('bare domain (no path)', () => {
 
 		expect(response.status).toBe(200);
 		const html = await response.text();
+		expect(html).toContain('Niente');
 		expect(html).not.toContain('<form');
 	});
 
